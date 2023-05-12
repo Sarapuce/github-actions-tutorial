@@ -1,10 +1,11 @@
 name: main-worklfow
 
 env:
-  IMAGE_NAME: sarapuce/${{ github.repository }}
-  REGISTRY: ghcr.io
+  IMAGE_NAME: Sarapuce/${{ github.repository }}
+  REGISTRY: ghcr.io/sarapuce
   KUBECTL_VERSION: "1.14.10"
   KUSTOMIZE_VERSION: "3.5.4"
+  TAG: master
 
 permissions:
   packages: write
@@ -18,65 +19,65 @@ on:
       - master
 
 jobs:
-  # # Run all unit tests.
-  # run-tests:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     # Check out the pull request's source code.
-  #     - name: Check out source code
-  #       uses: actions/checkout@v3
+  # Run all unit tests.
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the pull request's source code.
+      - name: Check out source code
+        uses: actions/checkout@v3
 
-  #     # Install Go.
-  #     - name: Set up Go
-  #       uses: actions/setup-go@v3
-  #       with:
-  #         go-version: "^1.14" # The Go version to download and use.
+      # Install Go.
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "^1.14" # The Go version to download and use.
 
-  #     - name: Print Go version
-  #       run: go version
+      - name: Print Go version
+        run: go version
 
-  #     - name: Run unit tests
-  #       run: go test -v ./...
+      - name: Run unit tests
+        run: go test -v ./...
 
 
-  # # Build and release.
-  # build-and-release:
-  #   needs: 
-  #     - "run-tests"
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     # Check out source code.
-  #     - name: Check out source code
-  #       uses: actions/checkout@v3
+  # Build and release.
+  build-and-release:
+    needs: 
+      - "run-tests"
+    runs-on: ubuntu-latest
+    steps:
+      # Check out source code.
+      - name: Check out source code
+        uses: actions/checkout@v3
 
-  #     - name: Log in to the Container registry
-  #       uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Extract metadata (tags, labels) for Docker
-  #       id: meta
-  #       uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
-  #       with:
-  #         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-  #     - name: Build and push Docker image
-  #       uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
-  #       with:
-  #         context: .
-  #         push: true
-  #         tags: ${{ steps.meta.outputs.tags }}
-  #         labels: ${{ steps.meta.outputs.labels }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   # Deploy to Kubernetes.
   deploy:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
-    # needs:
-    #   - run-tests
-    #   - build-and-release
+    needs:
+      - run-tests
+      - build-and-release
     steps:
     # Check out source code.
     - name: Check out source code
@@ -102,8 +103,7 @@ jobs:
     # Kustomize Kubernetes resources.
     - name: Kustomize Kubernetes resources
       working-directory: ./manifests
-      run: kustomize edit set image REPOSITORY:TAG=ghcr.io/sarapuce/sarapuce/github-actions-tutorial:master
-      # run: kustomize edit set image "${REGISTRY}"/"${IMAGE_NAME}":sha-"${GITHUB_SHA::7}"
+      run: kustomize edit set image REPOSITORY:TAG="${REGISTRY}"/"${IMAGE_NAME}":"${TAG}"
 
     # Deploy to Kubernetes.
     - name: Deploy to Kubernetes
