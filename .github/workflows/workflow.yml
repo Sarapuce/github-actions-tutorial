@@ -102,7 +102,7 @@ jobs:
     # Kustomize Kubernetes resources.
     - name: Kustomize Kubernetes resources
       working-directory: ./manifests
-      run: kustomize edit set image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      run: kustomize edit set image ghcr.io/sarapuce/sarapuce/github-actions-tutorial:master
       # run: kustomize edit set image "${REGISTRY}"/"${IMAGE_NAME}":sha-"${GITHUB_SHA::7}"
 
     # Deploy to Kubernetes.
